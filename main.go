@@ -17,7 +17,10 @@ func main() {
 
 	flag.Parse()
 
-	connstr := fmt.Sprintf("%s?cacertpath=%s", *connection, *cafile)
+	connstr := *connection
+	if *cafile != "" {
+		connstr += fmt.Sprintf("?cacertpath=%s", *cafile)
+	}
 
 	cluster, err := gocb.Connect(connstr)
 	if err != nil {
