@@ -1,12 +1,10 @@
 package main
 
 import (
-	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
 
-	"github.com/couchbase/gocb/v2"
+	"github.com/couchbase/gocb"
 )
 
 func main() {
@@ -17,24 +15,27 @@ func main() {
 
 	flag.Parse()
 
-	ca, err := ioutil.ReadFile(*cafile)
+	connstr := fmt.Sprintf("%s?cacertpath=%s", *connection, *cafile)
+	fmt.Println("using connection string", connstr)
+
+	cluster, err := gocb.Connect(connstr)
 	if err != nil {
-		fmt.Println("failed to load CA:", err)
+		fmt.Println("failed to open connection:", err)
 		return
 	}
 
-	caCerts := x509.NewCertPool()
-	caCerts.AppendCertsFromPEM(ca)
-
-	options := gocb.ClusterOptions{
+	authenticator := gocb.PasswordAuthenticator{
 		Username: *username,
 		Password: *password,
-		SecurityConfig: gocb.SecurityConfig{
-			TLSRootCAs: caCerts,
-		},
 	}
 
-	if _, err := gocb.Connect(*connection, options); err != nil {
-		fmt.Println("failed to open connection:", err)
+	if err := cluster.Authenticate(authenticator); err != nil {
+		fmt.Println("failed to authenticate:", err)
+		return
+	}
+
+	if _, err := cluster.OpenBucket("default", ""); err != nil {
+		fmt.Println("failed to use bucket:", err)
+		return
 	}
 }
