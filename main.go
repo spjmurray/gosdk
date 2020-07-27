@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/couchbase/gocb"
 )
@@ -12,16 +13,16 @@ func main() {
 	username := flag.String("username", "", "Username")
 	password := flag.String("password", "", "Password")
 	cafile := flag.String("cafile", "", "CA filename")
+	bucketName := flag.String("bucket", "", "Bucket name")
 
 	flag.Parse()
 
 	connstr := fmt.Sprintf("%s?cacertpath=%s", *connection, *cafile)
-	fmt.Println("using connection string", connstr)
 
 	cluster, err := gocb.Connect(connstr)
 	if err != nil {
 		fmt.Println("failed to open connection:", err)
-		return
+		os.Exit(1)
 	}
 
 	authenticator := gocb.PasswordAuthenticator{
@@ -31,11 +32,11 @@ func main() {
 
 	if err := cluster.Authenticate(authenticator); err != nil {
 		fmt.Println("failed to authenticate:", err)
-		return
+		os.Exit(1)
 	}
 
-	if _, err := cluster.OpenBucket("default", ""); err != nil {
+	if _, err := cluster.OpenBucket(*bucketName, ""); err != nil {
 		fmt.Println("failed to use bucket:", err)
-		return
+		os.Exit(1)
 	}
 }
